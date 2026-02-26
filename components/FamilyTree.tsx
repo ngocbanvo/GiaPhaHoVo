@@ -10,6 +10,38 @@ interface SpouseData {
   note?: string | null;
 }
 
+// THUẬT TOÁN SẮP XẾP CHUẨN: LỚN TUỔI ĐỨNG TRÁI, NHỎ TUỔI ĐỨNG PHẢI
+// Hỗ trợ sắp xếp theo: Năm -> Tháng -> Ngày -> Giờ -> Phút
+const sortByBirthDate = (a: Person, b: Person) => {
+  const pA = a as any;
+  const pB = b as any;
+  
+  // 1. So sánh Năm
+  const yearA = pA.birth_year ?? 9999;
+  const yearB = pB.birth_year ?? 9999;
+  if (yearA !== yearB) return yearA - yearB;
+
+  // 2. So sánh Tháng
+  const monthA = pA.birth_month ?? 99;
+  const monthB = pB.birth_month ?? 99;
+  if (monthA !== monthB) return monthA - monthB;
+
+  // 3. So sánh Ngày
+  const dayA = pA.birth_day ?? 99;
+  const dayB = pB.birth_day ?? 99;
+  if (dayA !== dayB) return dayA - dayB;
+
+  // 4. So sánh Giờ
+  const hourA = pA.birth_hour ?? 99;
+  const hourB = pB.birth_hour ?? 99;
+  if (hourA !== hourB) return hourA - hourB;
+
+  // 5. So sánh Phút
+  const minA = pA.birth_minute ?? 99;
+  const minB = pB.birth_minute ?? 99;
+  return minA - minB;
+};
+
 export default function FamilyTree({
   personsMap,
   relationships,
@@ -106,9 +138,9 @@ export default function FamilyTree({
       .map((r) => personsMap.get(r.person_b))
       .filter(Boolean) as Person[];
 
-    // If there is only one spouse, or NO spouse, we can just lump all children together.
-    // Standard family trees often combine all children under the main node
-    // for simplicity of drawing, especially when dealing with CSS-based trees.
+    // ÁP DỤNG THUẬT TOÁN SẮP XẾP CHO DANH SÁCH CON CÁI
+    childrenList.sort(sortByBirthDate);
+
     return {
       person: personsMap.get(personId)!,
       spouses: spousesList,
@@ -130,9 +162,6 @@ export default function FamilyTree({
 
             {data.spouses.length > 0 && (
               <>
-                {/* <div className="mt-6 w-5 h-5 sm:w-6 sm:h-6 rounded-full shadow-sm bg-white border border-stone-200 z-20 flex items-center justify-center text-[10px] sm:text-xs">
-                  💍
-                </div> */}
                 {data.spouses.map((spouseData, idx) => (
                   <div key={spouseData.person.id} className="flex relative">
                     <FamilyNodeCard
@@ -181,9 +210,8 @@ export default function FamilyTree({
       onMouseUp={handleMouseUpOrLeave}
       onMouseLeave={handleMouseUpOrLeave}
       onClickCapture={handleClickCapture}
-      onDragStart={(e) => e.preventDefault()} // Prevent browser default dragging of links/images
+      onDragStart={(e) => e.preventDefault()}
     >
-      {/* We use a style block to inject the CSS logic for the family tree lines */}
       <style
         dangerouslySetInnerHTML={{
           __html: `
@@ -261,17 +289,13 @@ export default function FamilyTree({
         }}
       />
 
-      {/* 
-        Use w-max to prevent wrapping and allow scrolling. 
-        mx-auto centers it if smaller than screen. 
-        p-8 adds padding inside scroll area.
-      */}
       <div
         id="export-container"
         className={`w-max min-w-full mx-auto p-4 css-tree transition-opacity duration-200 ${isDragging ? "opacity-90" : ""}`}
       >
         <ul>
-          {roots.map((root) => (
+          {/* ÁP DỤNG THUẬT TOÁN SẮP XẾP CẢ CHO NHỮNG NGƯỜI ĐỨNG GỐC */}
+          {roots.slice().sort(sortByBirthDate).map((root) => (
             <React.Fragment key={root.id}>
               {renderTreeNode(root.id)}
             </React.Fragment>
