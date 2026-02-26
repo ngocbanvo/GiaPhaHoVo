@@ -9,7 +9,8 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 export default function LoginPage() {
-  const [email, setEmail] = useState("giaphaos@homielab.com");
+  // ĐÃ SỬA: Đổi email mặc định tại đây
+  const [email, setEmail] = useState("giaphahovo@gmail.com"); 
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -20,7 +21,8 @@ export default function LoginPage() {
       const hostname = window.location.hostname;
       if (hostname === "localhost" || hostname === "giapha-os.homielab.com") {
         setIsDemo(true);
-        setEmail("giaphaos@homielab.com");
+        // ĐÃ SỬA: Đổi email mặc định khi chạy ở localhost
+        setEmail("giaphahovo@gmail.com");
         setPassword("giaphaos");
       }
     }
@@ -74,9 +76,9 @@ export default function LoginPage() {
           setSuccessMessage(
             "Đăng ký thành công tài khoản bạn cần chờ admin kích hoạt để có thể xem nội dung.",
           );
-          setIsLogin(true); // Switch back to login view or just leave success message
-          setConfirmPassword(""); // clear confirm password
-          setPassword(""); // clear password
+          setIsLogin(true); 
+          setConfirmPassword(""); 
+          setPassword(""); 
         }
       }
     } catch (err) {
@@ -89,7 +91,6 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen flex flex-col bg-[#fafaf9] select-none selection:bg-amber-200 selection:text-amber-900 relative overflow-hidden">
-      {/* Decorative background grid and blurs */}
       <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808008_1px,transparent_1px),linear-gradient(to_bottom,#80808008_1px,transparent_1px)] bg-size-[24px_24px] pointer-events-none"></div>
       <div className="absolute inset-0 bg-[radial-gradient(circle_800px_at_50%_-30%,#fef3c7,transparent)] pointer-events-none"></div>
 
@@ -129,7 +130,7 @@ export default function LoginPage() {
                 className="mt-4 p-3 bg-amber-50 border border-amber-200/60 rounded-xl"
               >
                 <p className="text-[13px] font-semibold text-amber-800">
-                  Website Demo. Dữ liệu đều không có thật.
+                  Website dành riêng cho Gia Phả Họ Võ.
                 </p>
               </motion.div>
             )}
@@ -233,86 +234,4 @@ export default function LoginPage() {
                 <motion.div
                   initial={{ opacity: 0, y: -10, height: 0 }}
                   animate={{ opacity: 1, y: 0, height: "auto" }}
-                  exit={{ opacity: 0, y: -10, height: 0 }}
-                  className="text-teal-700 text-[13px] text-center bg-teal-50 p-3 rounded-xl border border-teal-100/50 font-medium"
-                >
-                  {successMessage}
-                </motion.div>
-              )}
-            </AnimatePresence>
-
-            <div className="flex flex-col gap-4 pt-4">
-              <button
-                type="submit"
-                disabled={loading}
-                className="group relative w-full flex justify-center items-center gap-2 py-4 px-4 text-[15px] font-bold rounded-xl text-white bg-stone-900 hover:bg-stone-800 border border-stone-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-stone-900 disabled:opacity-70 disabled:cursor-wait transition-all duration-300 shadow-xl shadow-stone-900/10 hover:shadow-2xl hover:shadow-stone-900/20 hover:-translate-y-0.5"
-              >
-                {loading ? (
-                  <span className="flex items-center gap-2.5">
-                    <svg
-                      className="animate-spin -ml-1 h-4 w-4 text-white"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                    >
-                      <circle
-                        className="opacity-25"
-                        cx="12"
-                        cy="12"
-                        r="10"
-                        stroke="currentColor"
-                        strokeWidth="4"
-                      ></circle>
-                      <path
-                        className="opacity-75"
-                        fill="currentColor"
-                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                      ></path>
-                    </svg>
-                    Đang xử lý...
-                  </span>
-                ) : (
-                  <>
-                    {isLogin ? "Đăng nhập" : "Tạo tài khoản"}
-                    {!isLogin && <UserPlus className="w-4 h-4 ml-1" />}
-                  </>
-                )}
-              </button>
-
-              <div className="relative flex items-center py-2 opacity-60">
-                <div className="grow border-t border-stone-200"></div>
-                <span className="shrink-0 mx-4 text-stone-400 text-[11px] uppercase tracking-wider font-bold">
-                  Hoặc
-                </span>
-                <div className="grow border-t border-stone-200"></div>
-              </div>
-
-              <button
-                type="button"
-                onClick={() => {
-                  setIsLogin(!isLogin);
-                  setError(null);
-                  setSuccessMessage(null);
-                }}
-                className="w-full text-sm font-semibold text-stone-600 hover:text-stone-900 bg-white hover:bg-stone-50 border border-stone-200/80 py-3.5 rounded-xl shadow-[0_2px_8px_-3px_rgba(0,0,0,0.05)] focus:outline-none transition-all duration-200"
-              >
-                {isLogin
-                  ? "Chưa có tài khoản? Đăng ký ngay"
-                  : "Đã có tài khoản? Đăng nhập"}
-              </button>
-            </div>
-          </form>
-        </motion.div>
-      </div>
-
-      <Link
-        href="/"
-        className="absolute top-6 left-6 z-20 flex items-center gap-2 text-stone-500 hover:text-stone-900 font-semibold text-sm transition-all duration-300 group bg-white/60 px-5 py-2.5 rounded-full backdrop-blur-md shadow-sm border border-stone-200 hover:border-stone-300 hover:shadow-md"
-      >
-        <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
-        Trang chủ
-      </Link>
-
-      <Footer className="bg-transparent relative z-10 border-none mt-auto" />
-    </div>
-  );
-}
+                  exit={{ opacity: 0, y: -10, height
