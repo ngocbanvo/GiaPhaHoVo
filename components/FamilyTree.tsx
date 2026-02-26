@@ -1,41 +1,36 @@
 "use client";
 
-import React, { useEffect, useRef, useState } from "react";
-
+import React, { useEffect, useState } from "react";
+import { TransformWrapper, TransformComponent } from "react-zoom-pan-pinch";
 import { Person, Relationship } from "@/types";
 import FamilyNodeCard from "./FamilyNodeCard";
+import { ZoomInIcon, ZoomOutIcon, RefreshCw as ResetIcon } from "lucide-react";
 
 interface SpouseData {
   person: Person;
   note?: string | null;
 }
 
-// THUẬT TOÁN SẮP XẾP CHUẨN: LỚN TUỔI ĐỨNG TRÁI (SINH TRƯỚC), NHỎ TUỔI ĐỨNG PHẢI
 const sortByBirthDate = (a: Person, b: Person) => {
   const pA = a as any;
   const pB = b as any;
   
-  // 1. So sánh Năm
   const yearA = pA.birth_year ?? 9999;
   const yearB = pB.birth_year ?? 9999;
   if (yearA !== yearB) return yearA - yearB;
 
-  // 2. So sánh Tháng
   const monthA = pA.birth_month ?? 99;
   const monthB = pB.birth_month ?? 99;
   if (monthA !== monthB) return monthA - monthB;
 
-  // 3. So sánh Ngày
   const dayA = pA.birth_day ?? 99;
   const dayB = pB.birth_day ?? 99;
   if (dayA !== dayB) return dayA - dayB;
 
-  // 4. So sánh Giờ
   const hourA = pA.birth_hour ?? 99;
   const hourB = pB.birth_hour ?? 99;
   if (hourA !== hourB) return hourA - hourB;
 
-  // 5. So sánh Phút
   const minA = pA.birth_minute ?? 99;
   const minB = pB.birth_minute ?? 99;
   return minA - minB;
@@ -50,68 +45,11 @@ export default function FamilyTree({
   relationships: Relationship[];
   roots: Person[];
 }) {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const [isPressed, setIsPressed] = useState(false);
-  const [isDragging, setIsDragging] = useState(false);
-  const hasDraggedRef = useRef(false);
-  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
-  const [scrollStart, setScrollStart] = useState({ left: 0, top: 0 });
-  
-  // GIẢI PHÁP CHỐNG LỖI HYDRATION:
-  // Đảm bảo code chỉ vẽ cây sau khi đã tải xong trên trình duyệt Client
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     setMounted(true);
-    // Center the scroll area horizontally on initial render
-    if (containerRef.current) {
-      const el = containerRef.current;
-      el.scrollLeft = (el.scrollWidth - el.clientWidth) / 2;
-    }
-  }, [roots]);
-
-  const handleMouseDown = (e: React.MouseEvent) => {
-    setIsPressed(true);
-    hasDraggedRef.current = false;
-    setDragStart({ x: e.pageX, y: e.pageY });
-    if (containerRef.current) {
-      setScrollStart({
-        left: containerRef.current.scrollLeft,
-        top: containerRef.current.scrollTop,
-      });
-    }
-  };
-
-  const handleMouseMove = (e: React.MouseEvent) => {
-    if (!isPressed || !containerRef.current) return;
-
-    const dx = e.pageX - dragStart.x;
-    const dy = e.pageY - dragStart.y;
-
-    if (!hasDraggedRef.current && (Math.abs(dx) > 5 || Math.abs(dy) > 5)) {
-      setIsDragging(true);
-      hasDraggedRef.current = true;
-    }
-
-    if (hasDraggedRef.current) {
-      e.preventDefault();
-      containerRef.current.scrollLeft = scrollStart.left - dx;
-      containerRef.current.scrollTop = scrollStart.top - dy;
-    }
-  };
-
-  const handleMouseUpOrLeave = () => {
-    setIsPressed(false);
-    setIsDragging(false);
-  };
-
-  const handleClickCapture = (e: React.MouseEvent) => {
-    if (hasDraggedRef.current) {
-      e.stopPropagation();
-      e.preventDefault();
-      hasDraggedRef.current = false;
-    }
-  };
+  }, []);
 
   const getTreeData = (personId: string) => {
     const spousesList: SpouseData[] = relationships
@@ -139,7 +77,6 @@ export default function FamilyTree({
       .map((r) => personsMap.get(r.person_b))
       .filter(Boolean) as Person[];
 
-    // Áp dụng sắp xếp anh trước em sau
     childrenList.sort(sortByBirthDate);
 
     return {
@@ -192,7 +129,6 @@ export default function FamilyTree({
     );
   };
 
-  // Nếu chưa mounted xong ở Client thì trả về màn hình chờ để tránh lỗi Hydration
   if (!mounted) {
     return <div className="w-full min-h-screen bg-stone-50" />;
   }
@@ -205,16 +141,7 @@ export default function FamilyTree({
     );
 
   return (
-    <div
-      ref={containerRef}
-      className={`w-full overflow-auto bg-stone-50 ${isPressed ? "cursor-grabbing" : "cursor-grab"}`}
-      onMouseDown={handleMouseDown}
-      onMouseMove={handleMouseMove}
-      onMouseUp={handleMouseUpOrLeave}
-      onMouseLeave={handleMouseUpOrLeave}
-      onClickCapture={handleClickCapture}
-      onDragStart={(e) => e.preventDefault()}
-    >
+    <div className="w-full h-full bg-stone-50">
       <style
         dangerouslySetInnerHTML={{
           __html: `
@@ -278,19 +205,40 @@ export default function FamilyTree({
       `,
         }}
       />
-
-      <div
-        id="export-container"
-        className={`w-max min-w-full mx-auto p-4 css-tree transition-opacity duration-200 ${isDragging ? "opacity-90" : ""}`}
+      <TransformWrapper
+        initialScale={1}
+        minScale={0.2}
+        maxScale={2.0}
+        centerOnInit
+        limitToBounds={false}
       >
-        <ul>
-          {roots.slice().sort(sortByBirthDate).map((root) => (
-            <React.Fragment key={root.id}>
-              {renderTreeNode(root.id)}
-            </React.Fragment>
-          ))}
-        </ul>
-      </div>
+        {({ zoomIn, zoomOut, resetTransform }) => (
+          <>
+            <div className="absolute top-24 right-4 z-10 flex flex-col gap-2">
+              <button onClick={() => zoomIn()} className="p-2 bg-white rounded-md shadow-md"><ZoomInIcon/></button>
+              <button onClick={() => zoomOut()} className="p-2 bg-white rounded-md shadow-md"><ZoomOutIcon/></button>
+              <button onClick={() => resetTransform()} className="p-2 bg-white rounded-md shadow-md"><ResetIcon/></button>
+            </div>
+            <TransformComponent
+              wrapperStyle={{ width: "100%", height: "calc(100vh - 200px)" }}
+              contentStyle={{ width: "max-content" }}
+            >
+              <div
+                id="export-container"
+                className="w-max min-w-full mx-auto p-4 css-tree"
+              >
+                <ul>
+                  {roots.slice().sort(sortByBirthDate).map((root) => (
+                    <React.Fragment key={root.id}>
+                      {renderTreeNode(root.id)}
+                    </React.Fragment>
+                  ))}
+                </ul>
+              </div>
+            </TransformComponent>
+          </>
+        )}
+      </TransformWrapper>
     </div>
   );
 }
