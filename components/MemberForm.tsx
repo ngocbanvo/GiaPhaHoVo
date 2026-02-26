@@ -195,14 +195,15 @@ export default function MemberForm({
 
         const { error: privateError } = await supabase
           .from("person_details_private")
-          .upsert(privateData); // Upsert works for both new and existing if we use person_id as unique key
+          .upsert(privateData); 
 
         if (privateError) throw privateError;
       }
 
-      // Redirect to the detail page of the created/edited person so user can easily add relationships
-      router.push("/dashboard/members/" + personId);
-      router.refresh();
+      // CẢI TIẾN: Thay đổi cách redirect để tránh lỗi "Client-side exception"
+      // Thay vì router.push, chúng ta dùng window.location để load lại trang sạch sẽ
+      window.location.href = "/dashboard/members/" + personId;
+
     } catch (err) {
       console.error("Error saving member:", err);
       setError((err as Error).message || "Failed to save member");
@@ -355,13 +356,11 @@ export default function MemberForm({
                     <button
                       type="button"
                       onClick={async () => {
-                        // If there is an existing URL from Supabase, try to extract the file path to delete it
                         if (
                           initialData?.avatar_url &&
                           avatarUrl === initialData.avatar_url
                         ) {
                           try {
-                            // Extract just the filename from the end of the URL
                             const fileName = initialData.avatar_url
                               .split("/")
                               .pop();
@@ -557,7 +556,6 @@ export default function MemberForm({
         </div>
       </motion.div>
 
-      {/* Private Information Section (Admin Only) */}
       {isAdmin && (
         <motion.div
           variants={formSectionVariants}
@@ -566,7 +564,6 @@ export default function MemberForm({
           transition={{ delay: 0.1 }}
           className="bg-linear-to-br from-amber-50/80 to-stone-50/80 backdrop-blur-md p-5 sm:p-8 rounded-2xl border border-amber-200/50 shadow-sm relative overflow-hidden"
         >
-          {/* Decorative Background Icon */}
           <Lock className="absolute -right-6 -bottom-6 w-32 h-32 text-amber-500/5 rotate-12" />
 
           <h3 className="text-lg sm:text-xl font-serif font-bold text-amber-900 mb-6 border-b border-amber-200/50 pb-4 flex items-center gap-2 relative z-10">
@@ -586,89 +583,3 @@ export default function MemberForm({
               <input
                 type="tel"
                 value={phoneNumber}
-                onChange={(e) => setPhoneNumber(e.target.value)}
-                disabled={isDeceased}
-                placeholder="Ví dụ: 0912345678"
-                className={`${inputClasses} disabled:bg-stone-100 disabled:text-stone-400 disabled:cursor-not-allowed`}
-              />
-              {isDeceased && (
-                <p className="text-[11px] font-medium text-rose-500 mt-1.5 flex items-center gap-1">
-                  <AlertCircle className="w-3 h-3" />
-                  Không thể nhập SĐT cho người đã mất
-                </p>
-              )}
-            </div>
-
-            <div>
-              <label className="flex items-center gap-1.5 text-sm font-semibold text-amber-900/80 mb-1.5">
-                <Briefcase className="w-4 h-4" /> Nghề nghiệp
-              </label>
-              <input
-                type="text"
-                value={occupation}
-                onChange={(e) => setOccupation(e.target.value)}
-                placeholder="Ví dụ: Kỹ sư, Bác sĩ..."
-                className={inputClasses}
-              />
-            </div>
-
-            <div className="md:col-span-2">
-              <label className="flex items-center gap-1.5 text-sm font-semibold text-amber-900/80 mb-1.5">
-                <MapPin className="w-4 h-4" /> Nơi ở hiện tại
-              </label>
-              <input
-                type="text"
-                value={currentResidence}
-                onChange={(e) => setCurrentResidence(e.target.value)}
-                placeholder="Địa chỉ cư trú..."
-                className={inputClasses}
-              />
-            </div>
-          </div>
-        </motion.div>
-      )}
-
-      <AnimatePresence>
-        {error && (
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95 }}
-            className="text-rose-700 text-sm font-medium bg-rose-50 border border-rose-200 p-4 rounded-xl flex items-start gap-3 shadow-sm"
-          >
-            <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" />
-            <p>{error}</p>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      <motion.div
-        variants={formSectionVariants}
-        initial="hidden"
-        animate="show"
-        transition={{ delay: 0.2 }}
-        className="flex justify-end gap-3 sm:gap-4 pt-6"
-      >
-        <button
-          type="button"
-          onClick={() => router.back()}
-          className="px-5 py-2.5 sm:py-3 border border-stone-200/80 shadow-sm text-sm font-bold rounded-xl text-stone-600 bg-white hover:bg-stone-50 hover:text-stone-900 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-stone-500 cursor-pointer transition-all"
-        >
-          Hủy bỏ
-        </button>
-        <button
-          type="submit"
-          disabled={loading}
-          className="px-6 py-2.5 sm:py-3 border border-transparent shadow-md text-sm font-bold rounded-xl text-white bg-linear-to-r from-amber-600 to-amber-700 hover:from-amber-700 hover:to-amber-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500 disabled:opacity-70 disabled:cursor-not-allowed cursor-pointer transition-all relative overflow-hidden flex items-center gap-2"
-        >
-          {loading && <Loader2 className="w-4 h-4 animate-spin" />}
-          {loading
-            ? "Đang lưu..."
-            : isEditing
-              ? "Lưu thay đổi"
-              : "Thêm thành viên"}
-        </button>
-      </motion.div>
-    </form>
-  );
-}
