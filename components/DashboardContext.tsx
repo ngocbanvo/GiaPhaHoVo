@@ -21,11 +21,11 @@ export const DashboardContext = createContext<DashboardState | undefined>(
 
 const useIsClient = () => {
   const [isClient, setIsClient] = useState(false)
- 
+  
   useEffect(() => {
     setIsClient(true)
   }, [])
- 
+  
   return isClient
 }
 
@@ -39,16 +39,33 @@ export const DashboardProvider = ({
   const [showAvatar, setShowAvatar] = useState<boolean>(true);
   
   const viewParam = searchParams.get("view") as ViewMode;
-  const [view, setView] = useState<ViewMode>(viewParam || "list");
+  
+  // Tạm thời để mặc định là list, sẽ được cập nhật ngay lập tức bởi useEffect bên dưới
+  const [view, setViewInternal] = useState<ViewMode>("list");
   const [rootId, setRootId] = useState<string | null>(null);
   
   const isClient = useIsClient();
 
+  // BỘ NÃO GHI NHỚ LỰA CHỌN CỦA NGƯỜI DÙNG
   useEffect(() => {
+    // 1. Nếu trên thanh địa chỉ có sẵn lệnh (?view=...) thì ưu tiên dùng nó và lưu vào sổ
     if (viewParam) {
-      setView(viewParam);
+      setViewInternal(viewParam);
+      localStorage.setItem("dashboard_view_memory", viewParam);
+    } else {
+      // 2. Nếu không có, mở "sổ tay" (localStorage) ra kiểm tra xem lần trước đang xem gì
+      const savedView = localStorage.getItem("dashboard_view_memory") as ViewMode;
+      if (savedView) {
+        setViewInternal(savedView); // Khôi phục lại đúng tab đó
+      }
     }
   }, [viewParam]);
+
+  // Hàm setView mới: Vừa đổi giao diện, vừa ghi nhớ vào sổ tay
+  const setView = (newView: ViewMode) => {
+    setViewInternal(newView);
+    localStorage.setItem("dashboard_view_memory", newView);
+  };
 
   const value = {
     memberModalId,
@@ -56,7 +73,7 @@ export const DashboardProvider = ({
     showAvatar,
     setShowAvatar,
     view,
-    setView,
+    setView, // Sử dụng hàm setView thông minh ở trên
     rootId,
     setRootId,
   };
