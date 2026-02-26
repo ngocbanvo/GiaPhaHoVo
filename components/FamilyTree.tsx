@@ -10,8 +10,7 @@ interface SpouseData {
   note?: string | null;
 }
 
-// THUẬT TOÁN SẮP XẾP CHUẨN: LỚN TUỔI ĐỨNG TRÁI, NHỎ TUỔI ĐỨNG PHẢI
-// Hỗ trợ sắp xếp theo: Năm -> Tháng -> Ngày -> Giờ -> Phút
+// THUẬT TOÁN SẮP XẾP CHUẨN: LỚN TUỔI ĐỨNG TRÁI (SINH TRƯỚC), NHỎ TUỔI ĐỨNG PHẢI
 const sortByBirthDate = (a: Person, b: Person) => {
   const pA = a as any;
   const pB = b as any;
@@ -57,8 +56,13 @@ export default function FamilyTree({
   const hasDraggedRef = useRef(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const [scrollStart, setScrollStart] = useState({ left: 0, top: 0 });
+  
+  // GIẢI PHÁP CHỐNG LỖI HYDRATION:
+  // Đảm bảo code chỉ vẽ cây sau khi đã tải xong trên trình duyệt Client
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    setMounted(true);
     // Center the scroll area horizontally on initial render
     if (containerRef.current) {
       const el = containerRef.current;
@@ -81,7 +85,6 @@ export default function FamilyTree({
   const handleMouseMove = (e: React.MouseEvent) => {
     if (!isPressed || !containerRef.current) return;
 
-    // Only start dragging if moved a bit to allow simple clicks
     const dx = e.pageX - dragStart.x;
     const dy = e.pageY - dragStart.y;
 
@@ -103,7 +106,6 @@ export default function FamilyTree({
   };
 
   const handleClickCapture = (e: React.MouseEvent) => {
-    // Intercept clicks if we were dragging, prevent links from opening
     if (hasDraggedRef.current) {
       e.stopPropagation();
       e.preventDefault();
@@ -111,7 +113,6 @@ export default function FamilyTree({
     }
   };
 
-  // Helper function to resolve tree connections for a person
   const getTreeData = (personId: string) => {
     const spousesList: SpouseData[] = relationships
       .filter(
@@ -138,7 +139,7 @@ export default function FamilyTree({
       .map((r) => personsMap.get(r.person_b))
       .filter(Boolean) as Person[];
 
-    // ÁP DỤNG THUẬT TOÁN SẮP XẾP CHO DANH SÁCH CON CÁI
+    // Áp dụng sắp xếp anh trước em sau
     childrenList.sort(sortByBirthDate);
 
     return {
@@ -148,15 +149,13 @@ export default function FamilyTree({
     };
   };
 
-  // Recursive function for rendering nodes
   const renderTreeNode = (personId: string): React.ReactNode => {
     const data = getTreeData(personId);
     if (!data.person) return null;
 
     return (
-      <li>
+      <li key={personId}>
         <div className="node-container inline-flex flex-col items-center">
-          {/* Main Person & Spouses Row */}
           <div className="flex relative z-10 bg-white rounded-2xl shadow-md border border-stone-200/80 transition-opacity">
             <FamilyNodeCard person={data.person} isMainNode={true} />
 
@@ -180,7 +179,6 @@ export default function FamilyTree({
           </div>
         </div>
 
-        {/* Render Children (if any) */}
         {data.children.length > 0 && (
           <ul>
             {data.children.map((child) => (
@@ -193,6 +191,11 @@ export default function FamilyTree({
       </li>
     );
   };
+
+  // Nếu chưa mounted xong ở Client thì trả về màn hình chờ để tránh lỗi Hydration
+  if (!mounted) {
+    return <div className="w-full min-h-screen bg-stone-50" />;
+  }
 
   if (roots.length === 0)
     return (
@@ -222,15 +225,12 @@ export default function FamilyTree({
           justify-content: center;
           padding-left: 0;
         }
-
         .css-tree li {
           float: left; text-align: center;
           list-style-type: none;
           position: relative;
           padding: 30px 5px 0 5px;
         }
-
-        /* Connecting lines */
         .css-tree li::before, .css-tree li::after {
           content: '';
           position: absolute; top: 0; right: 50%;
@@ -241,8 +241,6 @@ export default function FamilyTree({
           right: auto; left: 50%;
           border-left: 2px solid #d6d3d1;
         }
-
-        /* Remove left-right connectors from elements without siblings */
         .css-tree li:only-child::after {
           display: none;
         }
@@ -255,21 +253,15 @@ export default function FamilyTree({
           width: 0;
           height: 30px;
         }
-
-        /* Remove top connector from first child */
         .css-tree ul:first-child > li {
           padding-top: 0px;
         }
         .css-tree ul:first-child > li::before {
           display: none;
         }
-
-        /* Remove left connector from first child and right connector from last child */
         .css-tree li:first-child::before, .css-tree li:last-child::after {
           border: 0 none;
         }
-
-        /* Add back the vertical connector to the last nodes */
         .css-tree li:last-child::before {
           border-right: 2px solid #d6d3d1;
           border-radius: 0 12px 0 0;
@@ -277,8 +269,6 @@ export default function FamilyTree({
         .css-tree li:first-child::after {
           border-radius: 12px 0 0 0;
         }
-
-        /* Downward connectors from parents */
         .css-tree ul ul::before {
           content: '';
           position: absolute; top: 0; left: 50%;
@@ -294,7 +284,6 @@ export default function FamilyTree({
         className={`w-max min-w-full mx-auto p-4 css-tree transition-opacity duration-200 ${isDragging ? "opacity-90" : ""}`}
       >
         <ul>
-          {/* ÁP DỤNG THUẬT TOÁN SẮP XẾP CẢ CHO NHỮNG NGƯỜI ĐỨNG GỐC */}
           {roots.slice().sort(sortByBirthDate).map((root) => (
             <React.Fragment key={root.id}>
               {renderTreeNode(root.id)}
